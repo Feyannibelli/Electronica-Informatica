@@ -1,0 +1,68 @@
+# Dependencias
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+.pnpm-debug.log
+
+# Archivos de configuración de entorno
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env*.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Directorios de cobertura de pruebas
+coverage/
+.nyc_output/
+
+# Directorios de construcción
+build/
+dist/
+out/
+
+# Archivos de configuración específicos
+config/local.js
+config/production.js
+config/development.js
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Archivos temporales
+tmp/
+temp/
+
+# Archivos de clave SSL
+*.pem
+*.key
+*.cert
+
+# Archivos específicos de AWS
+credentials.csv
+.aws/
+
+# Archivos de PostgreSQL
+*.sql
+*.dump
+postgres-data/
+
+# Otros
+.directory
+.Trash-*

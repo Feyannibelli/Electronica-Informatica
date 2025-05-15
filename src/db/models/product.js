@@ -1,0 +1,1 @@
+//Modelo para latas/productos
