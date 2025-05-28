@@ -31,46 +31,6 @@ const initialProducts = [
     minimumStock: 5,
     status: 'active'
   },
-  {
-    name: 'Fanta',
-    price: 1.25,
-    stock: 12,
-    position: 'B1',
-    minimumStock: 5,
-    status: 'active'
-  },
-  {
-    name: 'Agua Mineral',
-    price: 1.00,
-    stock: 25,
-    position: 'B2',
-    minimumStock: 5,
-    status: 'active'
-  },
-  {
-    name: 'Jugo de Naranja',
-    price: 1.75,
-    stock: 10,
-    position: 'B3',
-    minimumStock: 5,
-    status: 'active'
-  },
-  {
-    name: 'Café',
-    price: 2.00,
-    stock: 8,
-    position: 'C1',
-    minimumStock: 5,
-    status: 'active'
-  },
-  {
-    name: 'Té Verde',
-    price: 1.80,
-    stock: 7,
-    position: 'C2',
-    minimumStock: 5,
-    status: 'active'
-  }
 ];
 
 // Función para inicializar la base de datos
