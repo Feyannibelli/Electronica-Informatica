@@ -4,12 +4,12 @@ const { Sequelize } = require('sequelize'); // Corregido: 'require' en lugar de 
 
 // Crear una instancia de Sequelize con los parámetros de conexión
 const sequelize = new Sequelize(
-    process.env.DB_NAME || 'iotdb',
-    process.env.DB_USER || 'iotuser',
-    process.env.DB_PASSWORD || 'tu_password_segura',
+    process.env.DB_NAME,
+    process.env.DB_USER,
+    process.env.DB_PASSWORD,
     {
-        host: process.env.DB_HOST || 'tu-instancia-sql-privada.aws', // recordar dar la direccion ip de la instancia o el DNS
-        port: process.env.DB_PORT || 5432,
+        host: process.env.DB_HOST, // recordar dar la direccion ip de la instancia o el DNS
+        port: process.env.DB_PORT,
         dialect: 'postgres',
         logging: console.log,
         pool: {

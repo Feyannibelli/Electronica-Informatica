@@ -1,14 +1,14 @@
 //Configuración de conexión MQTT
-require('dotenv').config(); // Corregido: 'require' en lugar de 'requestAnimationFrame'
+require('dotenv').config();
 
 const mqttConfig = {
     // Configuración del broker MQTT
     broker: {
-        url: process.env.MQTT_BROKER_URL || 'mqtt://localhost',  // URL del broker MQTT
-        port: process.env.MQTT_BROKER_PORT || 1883, 
-        clientId: `mqtt_client_${Math.random().toString(16).slice(2,8)}`, // ID de cliente aleatorio
-        username: process.env.MQTT_USERNAME,
-        password: process.env.MQTT_PASSWORD,
+        url: process.env.MQTT_BROKER_URL,
+        port: Number(process.env.MQTT_BROKER_PORT),
+        clientId: process.env.MQTT_CLIENT_ID,
+        username: '',
+        password: '',
         keepalive: 60,
         reconnectPeriod: 1000,
         clean: true
