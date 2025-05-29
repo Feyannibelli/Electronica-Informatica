@@ -8,7 +8,7 @@ const sequelize = new Sequelize(
     process.env.DB_USER || 'iotuser',
     process.env.DB_PASSWORD || 'tu_password_segura_123',
     {
-        host: process.env.DB_HOST || 'tu-instancia-sql-privada.aws', // recordar dar la direccion ip de la instancia o el DNS
+        host: process.env.DB_HOST || '172.31.78.239',
         port: process.env.DB_PORT || 5432,
         dialect: 'postgres',
         logging: console.log,
