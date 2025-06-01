@@ -6,7 +6,6 @@ yarn-debug.log
 .pnpm-debug.log
 
 # Archivos de configuración de entorno
-.env
 .env.local
 .env.development
 .env.test
