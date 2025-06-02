@@ -33,8 +33,8 @@ const Sale = sequelize.define('Sale', {
     comment: 'Identificador único de la máquina expendedora'
   },
   status: {
-    type: DataTypes.ENUM('completed', 'cancelled', 'error'),
-    defaultValue: 'completed',
+    type: DataTypes.ENUM('pending', 'completed', 'cancelled', 'error'),
+    defaultValue: 'pending',
     comment: 'Estado de la transacción'
   },
   changeGiven: {
