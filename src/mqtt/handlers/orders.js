@@ -1,8 +1,11 @@
+// Manejo de pedidos (orders)
 const winston = require('winston');
 const Product = require('../../db/models/product');
-const Report = require('../../db/models/report'); // 🆕
+const Sale = require('../../db/models/sale');
+const Report = require('../../db/models/report');
 const mqttConfig = require('../../config/mqtt');
 
+// Configurar logger
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
@@ -15,6 +18,11 @@ const logger = winston.createLogger({
   ]
 });
 
+/**
+ * Maneja los pedidos recibidos del ESP32
+ * @param {Object} orderData - Datos del pedido
+ * @param {Object} mqttClient - Cliente MQTT para enviar respuestas
+ */
 const handleOrder = async (orderData, mqttClient) => {
   try {
     logger.info(`Procesando pedido: ${JSON.stringify(orderData)}`);
@@ -37,14 +45,13 @@ const handleOrder = async (orderData, mqttClient) => {
     if (product.stock <= 0) {
       logger.warn(`Producto ${product.name} sin stock disponible`);
 
-      // 🆕 Reporte automático por falta de stock
+      // Crear reporte automático de tipo 'out_of_stock'
       await Report.create({
         type: 'out_of_stock',
-        description: `Intento de pedido sin stock: ${product.name} sin stock`,
+        description: `Se intentó pedir ${product.name} (posición ${product.position}) sin stock`,
         productId: product.id,
         machineId: orderData.machineId || 'unknown',
-        reportedBy: 'system',
-        status: 'pending'
+        reportedBy: 'system'
       });
 
       mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
@@ -57,22 +64,11 @@ const handleOrder = async (orderData, mqttClient) => {
     }
 
     product.stock -= 1;
-
     if (product.stock <= product.minimumStock) {
       product.status = 'low_stock';
     }
 
     await product.save();
-
-    // 🆕 Reporte automático por pedido exitoso
-    await Report.create({
-      type: 'order',
-      description: `Pedido procesado: ${product.name}`,
-      productId: product.id,
-      machineId: orderData.machineId || 'unknown',
-      reportedBy: 'system',
-      status: 'completed'
-    });
 
     mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
       status: 'success',
@@ -87,7 +83,6 @@ const handleOrder = async (orderData, mqttClient) => {
 
   } catch (error) {
     logger.error(`Error al procesar pedido: ${error.message}`);
-
     mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
       status: 'error',
       message: `Error: ${error.message}`

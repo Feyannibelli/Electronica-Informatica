@@ -1,9 +1,10 @@
 const winston = require('winston');
 const Product = require('../../db/models/product');
 const Sale = require('../../db/models/sale');
-const Report = require('../../db/models/report'); // 🆕
+const Report = require('../../db/models/report');
 const mqttConfig = require('../../config/mqtt');
 
+// Logger
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
@@ -16,6 +17,11 @@ const logger = winston.createLogger({
   ]
 });
 
+/**
+ * Maneja los pagos recibidos del ESP32
+ * @param {Object} paymentData - Datos del pago
+ * @param {Object} mqttClient - Cliente MQTT para enviar respuestas
+ */
 const handlePayment = async (paymentData, mqttClient) => {
   try {
     logger.info(`Procesando pago: ${JSON.stringify(paymentData)}`);
@@ -25,9 +31,23 @@ const handlePayment = async (paymentData, mqttClient) => {
     }
 
     const product = await Product.findByPk(paymentData.productId);
-
     if (!product) {
-      throw new Error(`Producto con ID ${paymentData.productId} no encontrado`);
+      logger.warn(`Producto con ID ${paymentData.productId} no encontrado`);
+
+      await Report.create({
+        type: 'payment_error',
+        description: `Producto no encontrado para el pago. ID: ${paymentData.productId}`,
+        productId: null,
+        machineId: paymentData.machineId || 'unknown',
+        reportedBy: 'system'
+      });
+
+      mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
+        status: 'error',
+        message: 'Producto no encontrado',
+        productId: paymentData.productId
+      }));
+      return;
     }
 
     const amount = parseFloat(paymentData.amount);
@@ -38,12 +58,11 @@ const handlePayment = async (paymentData, mqttClient) => {
 
       await Report.create({
         type: 'payment_error',
-        description: `Pago insuficiente para ${product.name}. Monto recibido: ${amount}, Precio requerido: ${price}`,
+        description: `Monto insuficiente para ${product.name}. Recibido: ${amount}, Requerido: ${price}`,
         productId: product.id,
         machineId: paymentData.machineId || 'unknown',
-        reportedBy: 'system',
-        status: 'pending'
-      })
+        reportedBy: 'system'
+      });
 
       mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
         status: 'error',
@@ -52,7 +71,6 @@ const handlePayment = async (paymentData, mqttClient) => {
         received: amount,
         required: price
       }));
-
       return;
     }
 
@@ -60,7 +78,7 @@ const handlePayment = async (paymentData, mqttClient) => {
 
     const sale = await Sale.create({
       productId: product.id,
-      amount: amount,
+      amount,
       paymentMethod: paymentData.paymentMethod || 'cash',
       machineId: paymentData.machineId || 'unknown',
       status: 'completed',
@@ -70,16 +88,6 @@ const handlePayment = async (paymentData, mqttClient) => {
     product.lastSold = new Date();
     await product.save();
 
-    // 🆕 Reporte automático por pago exitoso
-    await Report.create({
-      type: 'payment',
-      description: `Pago registrado: ${product.name}, Monto: ${amount}`,
-      productId: product.id,
-      machineId: paymentData.machineId || 'unknown',
-      reportedBy: 'system',
-      status: 'completed'
-    });
-
     mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
       status: 'success',
       message: 'Pago procesado correctamente',
@@ -87,11 +95,10 @@ const handlePayment = async (paymentData, mqttClient) => {
       productId: product.id,
       productName: product.name,
       paid: amount,
-      change: change
+      change
     }));
 
     logger.info(`Pago procesado: Producto ${product.name} (ID: ${product.id}). Monto: ${amount}, Cambio: ${change}`);
-
   } catch (error) {
     logger.error(`Error al procesar pago: ${error.message}`);
 
