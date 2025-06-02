@@ -51,7 +51,9 @@ app.get('/mqtt/status', (req, res) => {
 const productRoutes = require('./routes/product');
 const salesRoutes = require('./routes/sales');
 const reportRoutes = require('./routes/reports');
+const exportRoutes = require('./routes/export');
 
+app.use('/export', exportRoutes);
 app.use('/products', productRoutes);
 app.use('/sales', salesRoutes);
 app.use('/reports', reportRoutes);
