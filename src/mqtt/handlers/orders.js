@@ -27,6 +27,40 @@ const handleOrder = async (orderData, mqttClient) => {
   try {
     logger.info(`Procesando pedido: ${JSON.stringify(orderData)}`);
 
+    // Verificar si hay algún producto con stock antes de continuar
+    const hayProductosConStock = await Product.findOne({
+      where: {
+        stock: { [Op.gt]: 0 }
+      }
+    });
+
+    if (!hayProductosConStock) {
+      logger.error('No hay productos con stock disponible en la máquina');
+      mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
+        status: 'error',
+        message: 'Lo sentimos, la máquina está sin stock de productos'
+      }));
+      return;
+    }
+
+    // Primero verificamos si hay un pago válido pendiente
+    let payment = await Sale.findOne({
+      where: {
+        machineId: orderData.machineId || 'unknown',
+        status: 'pending'
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    if (!payment) {
+      logger.warn(`No hay pagos pendientes para esta máquina`);
+      mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
+        status: 'error',
+        message: 'Debe realizar un pago antes de pedir un producto'
+      }));
+      return;
+    }
+
     if (!orderData.productId && !orderData.position) {
       throw new Error('El pedido debe incluir productId o position');
     }
@@ -42,20 +76,13 @@ const handleOrder = async (orderData, mqttClient) => {
       throw new Error('Producto no encontrado');
     }
 
-    // Buscar un pago válido pendiente PARA ESA MÁQUINA
-    let payment = await Sale.findOne({
-      where: {
-        machineId: orderData.machineId || 'unknown',
-        status: 'pending'
-      },
-      order: [['createdAt', 'DESC']]
-    });
-
-    if (!payment) {
-      logger.warn(`No hay pagos pendientes para esta máquina`);
+    // Verificar si el pago es suficiente para este producto
+    if (payment.amount < product.price) {
+      logger.warn(`Monto insuficiente para el producto ${product.name}`);
       mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
         status: 'error',
-        message: 'Debe realizar un pago antes de pedir un producto'
+        message: 'Monto insuficiente para este producto',
+        productId: product.id
       }));
       return;
     }
@@ -96,21 +123,10 @@ const handleOrder = async (orderData, mqttClient) => {
       } else {
         mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
           status: 'error',
-          message: 'Sin stock y sin productos alternativos'
+          message: 'Lo sentimos, no hay productos disponibles con el monto pagado'
         }));
         return;
       }
-    }
-
-    // Verificar si el pago es suficiente para este producto
-    if (payment.amount < product.price) {
-      logger.warn(`Monto insuficiente para el producto ${product.name}`);
-      mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
-        status: 'error',
-        message: 'Monto insuficiente para este producto',
-        productId: product.id
-      }));
-      return;
     }
 
     // Todo bien → completar el pedido
