@@ -3,6 +3,7 @@ const winston = require('winston');
 const Product = require('../../db/models/product');
 const Sale = require('../../db/models/sale');
 const Report = require('../../db/models/report');
+const Payment = require('../../db/models/payment');
 const mqttConfig = require('../../config/mqtt');
 
 // Configurar logger
@@ -48,7 +49,7 @@ const handleOrder = async (orderData, mqttClient) => {
       // Crear reporte automático de tipo 'out_of_stock'
       await Report.create({
         type: 'out_of_stock',
-        description: `Se intentó pedir ${product.name} (posición ${product.position}) sin stock`,
+        description: `Se intentó pedir ${product.name} (posición ${product.position}) sin stock` ,
         productId: product.id,
         machineId: orderData.machineId || 'unknown',
         reportedBy: 'system'
@@ -63,11 +64,44 @@ const handleOrder = async (orderData, mqttClient) => {
       return;
     }
 
+    // Buscar un pago válido y pendiente
+    const payment = await Payment.findOne({
+      where: {
+        productId: product.id,
+        machineId: orderData.machineId || 'unknown',
+        status: 'pending'
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    if (!payment || payment.amount < product.price) {
+      logger.warn(`No se encontró un pago válido para el producto ${product.name}`);
+
+      mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
+        status: 'error',
+        message: 'Pago no registrado o insuficiente',
+        productId: product.id
+      }));
+
+      return;
+    }
+
+    // Actualizar el pago a completado
+    payment.status = 'completed';
+    await payment.save();
+
+    // Crear registro de venta
+    await Sale.create({
+      productId: product.id,
+      amount: payment.amount,
+      paymentMethod: payment.paymentMethod,
+      machineId: payment.machineId
+    });
+
     product.stock -= 1;
     if (product.stock <= product.minimumStock) {
       product.status = 'low_stock';
     }
-
     await product.save();
 
     mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
