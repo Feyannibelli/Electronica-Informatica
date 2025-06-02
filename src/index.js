@@ -90,11 +90,9 @@ process.on('SIGTERM', () => {
 });
 
 const productRoutes = require('./routes/product');
-const productRoutes = require('./routes/product');
 const salesRoutes = require('./routes/sales');
 const reportRoutes = require('./routes/reports');
 
-app.use('/products', productRoutes);
 app.use('/products', productRoutes);
 app.use('/sales', salesRoutes);
 app.use('/reports', reportRoutes);
