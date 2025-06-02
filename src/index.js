@@ -48,28 +48,43 @@ app.get('/mqtt/status', (req, res) => {
   });
 });
 
+const productRoutes = require('./routes/product');
+const salesRoutes = require('./routes/sales');
+const reportRoutes = require('./routes/reports');
+
+app.use('/products', productRoutes);
+app.use('/sales', salesRoutes);
+app.use('/reports', reportRoutes);
+
+const { syncModels } = require('./config/db');
+
 // Iniciar la aplicación
 const startApp = async () => {
+  await syncModels(); // Esto ahora funciona bien porque los modelos ya fueron importados
+
   try {
-    // Probar conexión a la base de datos
     logger.info('Probando conexión a PostgreSQL...');
     const dbConnected = await testConnection();
-    
+
     if (!dbConnected) {
       logger.error('No se pudo conectar a PostgreSQL. Verifique la configuración.');
       process.exit(1);
     }
-    
+
     logger.info('Conexión a PostgreSQL establecida correctamente.');
-    
-    // Iniciar servidor Express
+
+    // Middleware de rutas
+    app.use('/products', productRoutes);
+    app.use('/sales', salesRoutes);
+    app.use('/reports', reportRoutes);
+
     app.listen(PORT, () => {
       logger.info(`Servidor Express iniciado en el puerto ${PORT}`);
     });
-    
+
     logger.info('La aplicación se ha iniciado correctamente.');
     logger.info('Cliente MQTT conectado y escuchando mensajes...');
-    
+
   } catch (error) {
     logger.error(`Error al iniciar la aplicación: ${error.message}`);
     process.exit(1);
@@ -88,15 +103,6 @@ process.on('SIGTERM', () => {
   mqttClient.client.end();
   process.exit(0);
 });
-
-const productRoutes = require('./routes/product');
-const salesRoutes = require('./routes/sales');
-const reportRoutes = require('./routes/reports');
-
-app.use('/products', productRoutes);
-app.use('/sales', salesRoutes);
-app.use('/reports', reportRoutes);
-
 
 // Iniciar la aplicación
 startApp();

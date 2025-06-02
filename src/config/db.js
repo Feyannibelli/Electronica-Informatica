@@ -11,29 +11,35 @@ const sequelize = new Sequelize(
         host: process.env.DB_HOST, // recordar dar la direccion ip de la instancia o el DNS
         port: process.env.DB_PORT,
         dialect: 'postgres',
-        logging: console.log,
-        pool: {
+        logging: false,
+        /*pool: {
             max: 5,
             min: 0,
             acquire: 30000,
             idle: 10000
-        }
+        }*/
     }
 );
 
 // Función para probar la conexión a la base de datos
-const testConnection = async () => { 
+const testConnection = async () => {
     try {
-        await sequelize.authenticate(); 
-        console.log('Conexión a PostgreSQL establecida correctamente.');
+        await sequelize.authenticate();
         return true;
     } catch (error) {
-        console.error('Error al conectar a PostgreSQL:', error); 
+        console.error('Error conectando a PostgreSQL:', error);
         return false;
     }
 };
 
-module.exports = { 
-    sequelize,
-    testConnection
+// 🔥 agregá esto para que se sincronicen los modelos
+const syncModels = async () => {
+    try {
+        await sequelize.sync(); // usar { force: true } si querés forzar el reseteo
+        console.log('Modelos sincronizados correctamente.');
+    } catch (err) {
+        console.error('Error al sincronizar modelos:', err);
+    }
 };
+
+module.exports = { sequelize, testConnection, syncModels };
