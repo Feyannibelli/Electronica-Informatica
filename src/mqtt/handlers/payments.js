@@ -81,7 +81,7 @@ const handlePayment = async (paymentData, mqttClient) => {
       amount,
       paymentMethod: paymentData.paymentMethod || 'cash',
       machineId: paymentData.machineId || 'unknown',
-      status: 'completed',
+      status: 'pending',
       changeGiven: change
     });
 
