@@ -1,12 +1,11 @@
-// src/mqtt/handlers/orders.js
-
+// Manejo de pedidos (orders)
 const winston = require('winston');
 const Product = require('../../db/models/product');
 const Report = require('../../db/models/report');
 const Sale = require('../../db/models/sale');
 const mqttConfig = require('../../config/mqtt');
 
-// Logger
+// Configurar logger
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
@@ -19,6 +18,11 @@ const logger = winston.createLogger({
   ]
 });
 
+/**
+ * Maneja los pedidos recibidos del ESP32
+ * @param {Object} orderData - Datos del pedido
+ * @param {Object} mqttClient - Cliente MQTT para enviar respuestas
+ */
 const handleOrder = async (orderData, mqttClient) => {
   try {
     logger.info(`Procesando pedido: ${JSON.stringify(orderData)}`);
@@ -38,17 +42,67 @@ const handleOrder = async (orderData, mqttClient) => {
       throw new Error('Producto no encontrado');
     }
 
-    const machineId = orderData.machineId || 'unknown';
-
     // Buscar un pago válido y pendiente
-    const payment = await Sale.findOne({
+    let payment = await Sale.findOne({
       where: {
         productId: product.id,
-        machineId,
+        machineId: orderData.machineId || 'unknown',
         status: 'pending'
       },
       order: [['createdAt', 'DESC']]
     });
+
+    // Si no hay stock, buscar otro producto con stock y precio <= pago
+    if (product.stock <= 0) {
+      logger.warn(`Producto ${product.name} sin stock disponible`);
+
+      await Report.create({
+        type: 'out_of_stock',
+        description: `Se intentó pedir ${product.name} (posición ${product.position}) sin stock` ,
+        productId: product.id,
+        machineId: orderData.machineId || 'unknown',
+        reportedBy: 'system'
+      });
+
+      if (payment) {
+        const alternative = await Product.findOne({
+          where: {
+            stock: { [require('sequelize').Op.gt]: 0 },
+            price: { [require('sequelize').Op.lte]: payment.amount }
+          },
+          order: [['id', 'ASC']]
+        });
+
+        if (alternative) {
+          payment.productId = alternative.id;
+          await payment.save();
+          product = alternative;
+
+          logger.info(`Pago redirigido a ${product.name} (ID: ${product.id})`);
+
+          mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
+            status: 'info',
+            message: 'Se ha reemplazado el producto por otro disponible',
+            productId: product.id,
+            productName: product.name,
+            remainingStock: product.stock
+          }));
+        } else {
+          mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
+            status: 'error',
+            message: 'Sin stock disponible y no hay productos alternativos'
+          }));
+          return;
+        }
+      } else {
+        mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
+          status: 'error',
+          message: 'Sin stock disponible',
+          productId: product.id
+        }));
+        return;
+      }
+    }
 
     if (!payment || payment.amount < product.price) {
       logger.warn(`No se encontró un pago válido para el producto ${product.name}`);
@@ -58,37 +112,12 @@ const handleOrder = async (orderData, mqttClient) => {
         message: 'Pago no registrado o insuficiente',
         productId: product.id
       }));
-
       return;
     }
 
-    if (product.stock <= 0) {
-      logger.warn(`Producto ${product.name} sin stock disponible`);
-
-      // Reporte automático
-      await Report.create({
-        type: 'out_of_stock',
-        description: `Intento de pedido sin stock: ${product.name} (${product.position})`,
-        productId: product.id,
-        machineId,
-        reportedBy: 'system'
-      });
-
-      mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
-        status: 'warning',
-        message: `No hay más stock de ${product.name}. Puede elegir otro producto.`,
-        productId: product.id,
-        productName: product.name
-      }));
-
-      return;
-    }
-
-    // Marcar pago como completado
     payment.status = 'completed';
     await payment.save();
 
-    // Descontar stock
     product.stock -= 1;
     if (product.stock <= product.minimumStock) {
       product.status = 'low_stock';
@@ -104,7 +133,7 @@ const handleOrder = async (orderData, mqttClient) => {
       remainingStock: product.stock
     }));
 
-    logger.info(`Pedido completado: ${product.name} (ID: ${product.id}). Stock restante: ${product.stock}`);
+    logger.info(`Pedido procesado: ${product.name} (ID: ${product.id}). Stock restante: ${product.stock}`);
 
   } catch (error) {
     logger.error(`Error al procesar pedido: ${error.message}`);
