@@ -1,9 +1,8 @@
 // Manejo de pedidos (orders)
 const winston = require('winston');
 const Product = require('../../db/models/product');
-const Sale = require('../../db/models/sale');
 const Report = require('../../db/models/report');
-const Payment = require('../../db/models/payment');
+const Sale = require('../../db/models/sale');
 const mqttConfig = require('../../config/mqtt');
 
 // Configurar logger
@@ -65,7 +64,7 @@ const handleOrder = async (orderData, mqttClient) => {
     }
 
     // Buscar un pago válido y pendiente
-    const payment = await Payment.findOne({
+    const payment = await Sale.findOne({
       where: {
         productId: product.id,
         machineId: orderData.machineId || 'unknown',
