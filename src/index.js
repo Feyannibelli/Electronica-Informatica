@@ -1,5 +1,6 @@
 // Punto de entrada de la aplicación
 require('dotenv').config();
+
 const express = require('express');
 const winston = require('winston');
 const { testConnection } = require('./config/db');
@@ -24,6 +25,8 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware para procesar JSON
 app.use(express.json());
+const path = require('path');
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Ruta de salud para monitoreo
 app.get('/health', (req, res) => {
