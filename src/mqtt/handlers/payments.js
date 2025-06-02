@@ -36,6 +36,15 @@ const handlePayment = async (paymentData, mqttClient) => {
     if (amount < price) {
       logger.warn(`Monto insuficiente: ${amount} < ${price}`);
 
+      await Report.create({
+        type: 'payment_error',
+        description: `Pago insuficiente para ${product.name}. Monto recibido: ${amount}, Precio requerido: ${price}`,
+        productId: product.id,
+        machineId: paymentData.machineId || 'unknown',
+        reportedBy: 'system',
+        status: 'pending'
+      })
+
       mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
         status: 'error',
         message: 'Monto insuficiente',

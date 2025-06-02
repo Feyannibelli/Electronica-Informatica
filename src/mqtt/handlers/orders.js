@@ -39,12 +39,12 @@ const handleOrder = async (orderData, mqttClient) => {
 
       // 🆕 Reporte automático por falta de stock
       await Report.create({
-        type: 'stock_error',
-        description: `Intento de pedido sin stock: ${product.name}`,
+        type: 'out_of_stock',
+        description: `Intento de pedido sin stock: ${product.name} sin stock`,
         productId: product.id,
         machineId: orderData.machineId || 'unknown',
         reportedBy: 'system',
-        status: 'registered'
+        status: 'pending'
       });
 
       mqttClient.publish(mqttConfig.publishTopics.confirmation, JSON.stringify({
