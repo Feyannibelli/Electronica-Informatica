@@ -62,6 +62,28 @@
         .export-btn:hover {
             background-color: #218838;
         }
+
+        .stats-header {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            border: 1px solid #dee2e6;
+        }
+
+        .stats-item {
+            display: inline-block;
+            margin-right: 2rem;
+            font-weight: bold;
+        }
+
+        .ventas-column {
+            background-color: #e8f5e8;
+        }
+
+        .ventas-totales-column {
+            background-color: #e8f0ff;
+        }
     </style>
 </head>
 <body>
@@ -83,6 +105,7 @@
             <th>Nombre</th>
             <th>Precio</th>
             <th>Stock</th>
+            <th class="ventas-column">Ventas</th>
             <th>Posición</th>
             <th>Última venta</th>
             <th>Estado</th>
@@ -94,6 +117,21 @@
 
 <!-- TAB: Ventas -->
 <section id="ventas">
+    <div class="stats-header">
+        <div class="stats-item">
+            <span>Ventas del día: </span>
+            <span id="ventasDelDia">0</span>
+        </div>
+        <div class="stats-item">
+            <span>Total recaudado: </span>
+            <span id="totalRecaudado">$0</span>
+        </div>
+        <div class="stats-item">
+            <span>Fecha: </span>
+            <span id="fechaActual"></span>
+        </div>
+    </div>
+    <button class="export-btn" onclick="exportarVentas()">Exportar a Excel</button>
     <table id="tablaVentas">
         <thead>
         <tr>
@@ -102,6 +140,7 @@
             <th>Monto</th>
             <th>Método de pago</th>
             <th>Cambio</th>
+            <th class="ventas-totales-column">Ventas Totales</th>
             <th>Fecha</th>
         </tr>
         </thead>
@@ -111,6 +150,7 @@
 
 <!-- TAB: Reportes -->
 <section id="reportes">
+    <button class="export-btn" onclick="exportarReportes()">Exportar a Excel</button>
     <table id="tablaReportes">
         <thead>
         <tr>
@@ -153,6 +193,7 @@
               <td>${p.name}</td>
               <td>$${p.price}</td>
               <td>${p.stock}</td>
+              <td class="ventas-column">${p.salesCount || 0}</td>
               <td>${p.position || '-'}</td>
               <td>${p.lastSold ? new Date(p.lastSold).toLocaleString() : '-'}</td>
               <td>${p.status}</td>
@@ -171,6 +212,9 @@
             const tbody = document.getElementById('tablaVentas').querySelector('tbody');
             tbody.innerHTML = '';
 
+            // Actualizar estadísticas del día
+            actualizarEstadisticasVentas(ventas);
+
             ventas.forEach(v => {
                 tbody.innerHTML += `
             <tr>
@@ -179,6 +223,7 @@
               <td>$${v.amount}</td>
               <td>${v.paymentMethod}</td>
               <td>$${v.changeGiven}</td>
+              <td class="ventas-totales-column">${v.dailyTotalSales || 0}</td>
               <td>${new Date(v.createdAt).toLocaleString()}</td>
             </tr>
           `;
@@ -213,8 +258,34 @@
         }
     }
 
+    function actualizarEstadisticasVentas(ventas) {
+        const hoy = new Date();
+        const fechaHoy = hoy.toISOString().split('T')[0];
+        
+        // Filtrar ventas del día actual (considerando zona horaria de Argentina)
+        const ventasDelDia = ventas.filter(v => {
+            const fechaVenta = new Date(v.createdAt).toISOString().split('T')[0];
+            return fechaVenta === fechaHoy;
+        });
+
+        const totalVentasDelDia = ventasDelDia.length;
+        const totalRecaudado = ventasDelDia.reduce((sum, v) => sum + parseFloat(v.amount), 0);
+
+        document.getElementById('ventasDelDia').textContent = totalVentasDelDia;
+        document.getElementById('totalRecaudado').textContent = `$${totalRecaudado.toFixed(2)}`;
+        document.getElementById('fechaActual').textContent = hoy.toLocaleDateString('es-AR');
+    }
+
     function exportarProductos() {
         window.location.href = '/export/products';
+    }
+
+    function exportarVentas() {
+        window.location.href = '/export/sales';
+    }
+
+    function exportarReportes() {
+        window.location.href = '/export/reports';
     }
 
     // Cargar productos por defecto al abrir
