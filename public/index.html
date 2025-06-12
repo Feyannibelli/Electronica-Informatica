@@ -105,7 +105,7 @@
             <th>Nombre</th>
             <th>Precio</th>
             <th>Stock</th>
-            <th class="ventas-column">Ventas</th>
+            <th>Ventas</th>
             <th>Posición</th>
             <th>Última venta</th>
             <th>Estado</th>
@@ -140,7 +140,7 @@
             <th>Monto</th>
             <th>Método de pago</th>
             <th>Cambio</th>
-            <th class="ventas-totales-column">Ventas Totales</th>
+            <th>Ventas Totales</th>
             <th>Fecha</th>
         </tr>
         </thead>
@@ -193,7 +193,7 @@
               <td>${p.name}</td>
               <td>$${p.price}</td>
               <td>${p.stock}</td>
-              <td class="ventas-column">${p.salesCount || 0}</td>
+              <td>${p.salesCount || 0}</td>
               <td>${p.position || '-'}</td>
               <td>${p.lastSold ? new Date(p.lastSold).toLocaleString() : '-'}</td>
               <td>${p.status}</td>
@@ -223,7 +223,7 @@
               <td>$${v.amount}</td>
               <td>${v.paymentMethod}</td>
               <td>$${v.changeGiven}</td>
-              <td class="ventas-totales-column">${v.dailyTotalSales || 0}</td>
+              <td>${v.dailyTotalSales || 0}</td>
               <td>${new Date(v.createdAt).toLocaleString()}</td>
             </tr>
           `;
