@@ -29,6 +29,11 @@ app.use(express.json());
 const path = require('path');
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+// Ruta para la página de pago (accesible vía QR)
+app.get('/pay', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'payment.html'));
+});
+
 // Esto sirve el archivo HTML cuando accedés a /
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
@@ -52,11 +57,13 @@ const productRoutes = require('./routes/product');
 const salesRoutes = require('./routes/sales');
 const reportRoutes = require('./routes/reports');
 const exportRoutes = require('./routes/export');
+const paymentRoutes = require('./routes/payment');
 
 app.use('/export', exportRoutes);
 app.use('/products', productRoutes);
 app.use('/sales', salesRoutes);
 app.use('/reports', reportRoutes);
+app.use('/payment', paymentRoutes);
 
 const { syncModels } = require('./config/db');
 
@@ -79,6 +86,7 @@ const startApp = async () => {
     app.use('/products', productRoutes);
     app.use('/sales', salesRoutes);
     app.use('/reports', reportRoutes);
+    app.use('/export', exportRoutes);
 
     app.listen(PORT, () => {
       logger.info(`Servidor Express iniciado en el puerto ${PORT}`);
