@@ -246,6 +246,25 @@
         document.getElementById('statusMessage').style.display = 'none';
     }
 
+    // Agrega esto al principio del script
+    let sessionId = null;
+
+    async function crearSesionPago(amount, machineId) {
+        const res = await fetch('/payment/create-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount, machineId })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            sessionId = data.sessionId;
+            return true;
+        } else {
+            showStatus('❌ Error al crear sesión de pago: ' + data.message, 'error');
+            return false;
+        }
+    }
+
     async function processPayment() {
         const amount = parseFloat(document.getElementById('amount').value);
         const machineId = document.getElementById('machineId').value || 'MD-001';
@@ -256,50 +275,57 @@
             showStatus('Por favor ingresa un monto válido', 'error');
             return;
         }
-
         if (amount < 0.5) {
             showStatus('El monto mínimo es $0.50', 'error');
             return;
         }
 
-        // Deshabilitar botón y mostrar loading
         payButton.disabled = true;
         payButton.innerHTML = '<div class="loading-spinner"></div>Procesando...';
         hideStatus();
 
         try {
-            // Enviar pago al servidor
+            // 1. Crear sesión si no existe
+            if (!sessionId) {
+                const ok = await crearSesionPago(amount, machineId);
+                if (!ok) {
+                    payButton.disabled = false;
+                    payButton.innerHTML = '💳 Realizar Pago';
+                    return;
+                }
+            }
+
+            // 2. Procesar el pago usando el sessionId
             const response = await fetch('/api/process-payment', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     amount: amount,
                     machineId: machineId,
                     paymentMethod: 'mobile',
-                    timestamp: new Date().toISOString()
+                    sessionId: sessionId
                 })
             });
 
             const result = await response.json();
 
-            if (result.success) {
-                showStatus(`✅ Pago realizado exitosamente. ID de transacción: ${result.transactionId}. Espera tu producto...`, 'success');
-                // Resetear formulario después de un tiempo
+            if (result.status === 'success') {
+                showStatus(`✅ Pago realizado exitosamente. Espera tu producto...`, 'success');
                 setTimeout(() => {
                     document.getElementById('amount').value = '';
                     hideStatus();
+                    sessionId = null; // Limpiar para el próximo pago
                 }, 5000);
             } else {
                 showStatus(`❌ Error: ${result.message}`, 'error');
+                sessionId = null; // Limpiar para reintentar
             }
 
         } catch (error) {
             console.error('Error al procesar pago:', error);
             showStatus('❌ Error de conexión. Intenta nuevamente.', 'error');
+            sessionId = null;
         } finally {
-            // Rehabilitar botón
             payButton.disabled = false;
             payButton.innerHTML = '💳 Realizar Pago';
         }
