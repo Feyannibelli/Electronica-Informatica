@@ -235,7 +235,7 @@
 
     function showStatus(message, type) {
         const statusDiv = document.getElementById('statusMessage');
-        statusDiv.className = status-message status-${type};
+        statusDiv.className = `status-message status-${type}`;
         statusDiv.innerHTML = message;
         statusDiv.style.display = 'block';
     }
@@ -283,15 +283,14 @@
             const result = await response.json();
 
             if (result.success) {
-                showStatus(✅ Pago realizado exitosamente. ID de transacción: ${result.transactionId}. Espera tu producto..., 'success');
-
+                showStatus(`✅ Pago realizado exitosamente. ID de transacción: ${result.transactionId}. Espera tu producto...`, 'success');
                 // Resetear formulario después de un tiempo
                 setTimeout(() => {
                     document.getElementById('amount').value = '';
                     hideStatus();
                 }, 5000);
             } else {
-                showStatus(❌ Error: ${result.message}, 'error');
+                showStatus(`❌ Error: ${result.message}`, 'error');
             }
 
         } catch (error) {
