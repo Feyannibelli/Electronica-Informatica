@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago - Mini Dispenser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .payment-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .dispenser-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .amount-section {
+            margin-bottom: 30px;
+        }
+
+        .amount-label {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .amount-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 18px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+
+        .amount-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .quick-amounts {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .quick-amount {
+            flex: 1;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .quick-amount:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .machine-section {
+            margin-bottom: 30px;
+        }
+
+        .machine-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .pay-button {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .pay-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .pay-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            margin-top: 30px;
+            color: #888;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="payment-container">
+    <div class="dispenser-icon">🥤</div>
+
+    <h1>Mini Dispenser</h1>
+    <p class="subtitle">Ingresa el monto y realiza tu pago</p>
+
+    <div class="amount-section">
+        <label class="amount-label" for="amount">Monto a pagar ($)</label>
+        <input type="number" id="amount" class="amount-input" placeholder="0.00" step="0.01" min="0.1">
+
+        <div class="quick-amounts">
+            <button class="quick-amount" onclick="setAmount(1.00)">$1.00</button>
+            <button class="quick-amount" onclick="setAmount(1.50)">$1.50</button>
+            <button class="quick-amount" onclick="setAmount(2.00)">$2.00</button>
+            <button class="quick-amount" onclick="setAmount(5.00)">$5.00</button>
+        </div>
+    </div>
+
+    <div class="machine-section">
+        <label class="amount-label" for="machineId">ID de Máquina (opcional)</label>
+        <input type="text" id="machineId" class="machine-input" placeholder="MD-001" value="MD-001">
+    </div>
+
+    <button id="payButton" class="pay-button" onclick="processPayment()">
+        💳 Realizar Pago
+    </button>
+
+    <div id="statusMessage" class="status-message"></div>
+
+    <div class="footer">
+        <p>Escanea el código QR de la máquina para pagar</p>
+    </div>
+</div>
+
+<script>
+    function setAmount(value) {
+        document.getElementById('amount').value = value.toFixed(2);
+    }
+
+    function showStatus(message, type) {
+        const statusDiv = document.getElementById('statusMessage');
+        statusDiv.className = status-message status-${type};
+        statusDiv.innerHTML = message;
+        statusDiv.style.display = 'block';
+    }
+
+    function hideStatus() {
+        document.getElementById('statusMessage').style.display = 'none';
+    }
+
+    async function processPayment() {
+        const amount = parseFloat(document.getElementById('amount').value);
+        const machineId = document.getElementById('machineId').value || 'MD-001';
+        const payButton = document.getElementById('payButton');
+
+        // Validaciones
+        if (!amount || amount <= 0) {
+            showStatus('Por favor ingresa un monto válido', 'error');
+            return;
+        }
+
+        if (amount < 0.5) {
+            showStatus('El monto mínimo es $0.50', 'error');
+            return;
+        }
+
+        // Deshabilitar botón y mostrar loading
+        payButton.disabled = true;
+        payButton.innerHTML = '<div class="loading-spinner"></div>Procesando...';
+        hideStatus();
+
+        try {
+            // Enviar pago al servidor
+            const response = await fetch('/api/process-payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    amount: amount,
+                    machineId: machineId,
+                    paymentMethod: 'mobile',
+                    timestamp: new Date().toISOString()
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showStatus(✅ Pago realizado exitosamente. ID de transacción: ${result.transactionId}. Espera tu producto..., 'success');
+
+                // Resetear formulario después de un tiempo
+                setTimeout(() => {
+                    document.getElementById('amount').value = '';
+                    hideStatus();
+                }, 5000);
+            } else {
+                showStatus(❌ Error: ${result.message}, 'error');
+            }
+
+        } catch (error) {
+            console.error('Error al procesar pago:', error);
+            showStatus('❌ Error de conexión. Intenta nuevamente.', 'error');
+        } finally {
+            // Rehabilitar botón
+            payButton.disabled = false;
+            payButton.innerHTML = '💳 Realizar Pago';
+        }
+    }
+
+    // Permitir Enter para pagar
+    document.getElementById('amount').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            processPayment();
+        }
+    });
+
+    // Auto-focus en el campo de monto
+    window.onload = function() {
+        document.getElementById('amount').focus();
+    };
+</script>
+</body>
+</html>
