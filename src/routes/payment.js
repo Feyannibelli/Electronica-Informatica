@@ -239,8 +239,9 @@ router.post('/process-payment', async (req, res) => {
         session.paymentMethod = paymentMethod || 'web';
         session.paidAt = new Date();
 
-        // Señal al hardware
+        console.log(`Pago recibido para sesión: ${sessionId}, monto: ${session.amount}`);
 
+        // Señal al hardware
         res.json({
             status: 'success',
             message: 'Pago procesado correctamente. ¡Ahora puedes elegir tu producto!',
