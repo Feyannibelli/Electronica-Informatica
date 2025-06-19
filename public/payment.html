@@ -197,7 +197,7 @@
 <div class="payment-container">
     <div class="dispenser-icon">🥤</div>
 
-    <h1>Mini Dispenser</h1>
+    <h1>Miniven</h1>
     <p class="subtitle">Ingresa el monto y realiza tu pago</p>
 
     <div class="amount-section">
@@ -212,10 +212,12 @@
         </div>
     </div>
 
+
     <div class="machine-section">
-        <label class="amount-label" for="machineId">ID de Máquina (opcional)</label>
-        <input type="text" id="machineId" class="machine-input" placeholder="MD-001" value="MD-001">
+        <label class="amount-label" for="machineId">ID de Máquina</label>
+        <input type="text" id="machineId" class="machine-input" placeholder="MV-001" value="MV-001">
     </div>
+
 
     <button id="payButton" class="pay-button" onclick="processPayment()">
         💳 Realizar Pago
@@ -224,7 +226,7 @@
     <div id="statusMessage" class="status-message"></div>
 
     <div class="footer">
-        <p>Escanea el código QR de la máquina para pagar</p>
+        <p>Por favor, ingrese el monto exacto.</p>
     </div>
 </div>
 
