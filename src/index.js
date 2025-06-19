@@ -101,6 +101,8 @@ const startApp = async () => {
   }
 };
 
+app.use('/api', paymentRoutes); // Esto hace que /api/process-payment funcione// Esto hace que /api/process-payment funcione
+
 // Manejar terminación del proceso
 process.on('SIGINT', () => {
   logger.info('Cerrando aplicación...');

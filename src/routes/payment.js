@@ -232,6 +232,120 @@ router.post('/process', async (req, res) => {
     }
 });
 
+router.post('/api/process-payment', async (req, res) => {
+    try {
+        const { productId, amount, sessionId, paymentMethod } = req.body;
+
+        // Validar sesión
+        const session = paymentSessions.get(sessionId);
+        if (!session) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Sesión de pago no válida o expirada'
+            });
+        }
+        if (session.status !== 'pending') {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Esta sesión de pago ya ha sido procesada'
+            });
+        }
+        if (new Date() > session.expiresAt) {
+            paymentSessions.delete(sessionId);
+            return res.status(400).json({
+                status: 'error',
+                message: 'Sesión de pago expirada'
+            });
+        }
+
+        // Obtener producto
+        const product = await Product.findByPk(productId);
+        if (!product) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'Producto no encontrado'
+            });
+        }
+        if (product.stock <= 0) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Producto sin stock disponible'
+            });
+        }
+
+        // Validar monto
+        const paidAmount = parseFloat(amount);
+        const productPrice = parseFloat(product.price);
+        if (paidAmount < productPrice) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Monto insuficiente'
+            });
+        }
+        const change = paidAmount - productPrice;
+
+        // Actualizar stock
+        product.stock -= 1;
+        product.lastSold = new Date();
+        if (product.stock <= product.minimumStock) {
+            product.status = 'low_stock';
+        }
+        await product.save();
+
+        // Registrar venta
+        const sale = await Sale.create({
+            productId: product.id,
+            amount: paidAmount,
+            paymentMethod: paymentMethod || 'web',
+            machineId: session.machineId,
+            status: 'completed',
+            changeGiven: change
+        });
+
+        // Actualizar sesión
+        session.status = 'completed';
+        session.saleId = sale.id;
+        session.completedAt = new Date();
+
+        // Señal al hardware
+        try {
+            await publishMessage(mqttConfig.publishTopics.control, {
+                action: 'dispense',
+                productId: product.id,
+                position: product.position,
+                saleId: sale.id,
+                sessionId: sessionId,
+                change: change
+            });
+        } catch (mqttError) {
+            console.error('Error enviando mensaje MQTT:', mqttError);
+        }
+
+        res.json({
+            status: 'success',
+            message: 'Pago procesado correctamente',
+            saleId: sale.id,
+            productId: product.id,
+            productName: product.name,
+            paid: paidAmount,
+            change: change,
+            remainingStock: product.stock
+        });
+
+        // Limpiar sesión después de un tiempo
+        setTimeout(() => {
+            paymentSessions.delete(sessionId);
+        }, 30000);
+
+    } catch (error) {
+        console.error('Error procesando pago:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Error interno del servidor'
+        });
+    }
+});
+
 // Verificar estado de sesión
 router.get('/session-status/:sessionId', (req, res) => {
     const sessionId = req.params.sessionId;
