@@ -15,7 +15,7 @@ router.get('/', (req, res) => {
 });
 
 // Crear sesión de pago sin productId
-router.post('/api/create-session', async (req, res) => {
+router.post('/create-session', async (req, res) => {
     try {
         const { amount, machineId } = req.body;
 
@@ -208,7 +208,7 @@ router.get('/product-info', async (req, res) => {
 });
  */
 
-router.post('/api/process-payment', async (req, res) => {
+router.post('/process-payment', async (req, res) => {
     try {
         const {amount, sessionId, paymentMethod } = req.body;
 
