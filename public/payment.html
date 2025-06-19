@@ -250,7 +250,7 @@
     let sessionId = null;
 
     async function crearSesionPago(amount, machineId) {
-        const res = await fetch('/payment/create-session', {
+        const res = await fetch('/api/create-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount, machineId })
