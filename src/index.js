@@ -63,7 +63,6 @@ app.use('/export', exportRoutes);
 app.use('/products', productRoutes);
 app.use('/sales', salesRoutes);
 app.use('/reports', reportRoutes);
-app.use('/payment', paymentRoutes);
 
 const { syncModels } = require('./config/db');
 
