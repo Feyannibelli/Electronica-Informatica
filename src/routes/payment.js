@@ -244,7 +244,7 @@ router.post('/process-payment', async (req, res) => {
         res.json({
             status: 'success',
             message: 'Pago procesado correctamente. ¡Ahora puedes elegir tu producto!',
-            paid: paidAmount,
+            paid: session.amount,
             sessionId: sessionId,
         });
 
